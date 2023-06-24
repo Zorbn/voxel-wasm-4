@@ -30,8 +30,7 @@ const ASPECT_RATIO: f32 = 1.0;
 const HEIGHT: f32 = 2.0;
 const WIDTH: f32 = ASPECT_RATIO * HEIGHT;
 const FOCAL_LENGTH: f32 = 1.0;
-const HORIZONTAL: Vec3<f32> = Vec3::new(WIDTH, 0.0, 0.0);
-const VERTICAL: Vec3<f32> = Vec3::new(0.0, HEIGHT, 0.0);
+const LOWER_LEFT_CORNER: Vec3::<f32> = Vec3::new(-WIDTH * 0.5, -HEIGHT * 0.5, FOCAL_LENGTH);
 const TEXTURE_SIZE: usize = 8;
 const INTERACT_DISTANCE: f32 = 6.0;
 
@@ -135,32 +134,27 @@ impl Game {
             }
         }
 
-        let lower_left_corner = Vec3::<f32> {
-            x: self.camera.position.x - HORIZONTAL.x * 0.5 - VERTICAL.x * 0.5,
-            y: self.camera.position.y - HORIZONTAL.y * 0.5 - VERTICAL.y * 0.5,
-            z: self.camera.position.z - HORIZONTAL.z * 0.5 - VERTICAL.z * 0.5 - FOCAL_LENGTH,
-        };
-
-        // Precalculate sin/cos of the camera's rotation vector,
-        // to reduce the number of computations done per-pixel.
-        let x_cos = self.camera.rotation.x.cos();
-        let x_sin = self.camera.rotation.x.sin();
-        let y_cos = self.camera.rotation.y.cos();
-        let y_sin = self.camera.rotation.y.sin();
-
         for y in 0..SCREEN_HEIGHT {
             let v = y as f32 / SCREEN_HEIGHT as f32;
             for x in 0..SCREEN_WIDTH {
                 let u = x as f32 / SCREEN_WIDTH as f32;
                 let mut direction = Vec3::<f32> {
-                    x: lower_left_corner.x + u * HORIZONTAL.x - self.camera.position.x,
-                    y: lower_left_corner.y + v * VERTICAL.y - self.camera.position.y,
-                    z: -lower_left_corner.z + self.camera.position.z,
+                    x: LOWER_LEFT_CORNER.x + u * WIDTH,
+                    y: LOWER_LEFT_CORNER.y + v * HEIGHT,
+                    z: LOWER_LEFT_CORNER.z,
                 };
-                // direction.rotate_by(&self.camera.rotation);
-                direction.rotate_by_precalculated(x_sin, x_cos, y_sin, y_cos);
+                direction.rotate_by_precalculated(
+                    self.camera.rotation_x_sin,
+                    self.camera.rotation_x_cos,
+                    self.camera.rotation_y_sin,
+                    self.camera.rotation_y_cos,
+                );
                 // Normalize the direction vector:
-                let direction_inv_sqrt = inv_sqrt(direction.x * direction.x + direction.y * direction.y + direction.z * direction.z);
+                let direction_inv_sqrt = inv_sqrt(
+                    direction.x * direction.x
+                        + direction.y * direction.y
+                        + direction.z * direction.z,
+                );
                 direction.x *= direction_inv_sqrt;
                 direction.y *= direction_inv_sqrt;
                 direction.z *= direction_inv_sqrt;

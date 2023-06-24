@@ -12,6 +12,11 @@ pub struct Camera {
     pub rotation: Vec3<f32>,
     pub forward: Vec3<f32>,
     pub right: Vec3<f32>,
+
+    pub rotation_x_sin: f32,
+    pub rotation_x_cos: f32,
+    pub rotation_y_sin: f32,
+    pub rotation_y_cos: f32,
 }
 
 impl Camera {
@@ -21,6 +26,10 @@ impl Camera {
             rotation: Vec3::new(0.0, 0.0, 0.0),
             forward: CAMERA_DEFAULT_FORWARD,
             right: CAMERA_DEFAULT_RIGHT,
+            rotation_x_sin: 0.0,
+            rotation_x_cos: 1.0,
+            rotation_y_sin: 0.0,
+            rotation_y_cos: 1.0,
         }
     }
 
@@ -55,7 +64,15 @@ impl Camera {
 
         self.rotation.x = (self.rotation.x + rotate_x * CAMERA_ROTATION_SPEED)
             .clamp(-CAMERA_MAX_X_ROTATION, CAMERA_MAX_X_ROTATION);
+        self.rotation_x_sin = self.rotation.x.sin();
+        self.rotation_x_cos = self.rotation.x.cos();
+
+        // Precalculate sin/cos of the camera's rotation vector,
+        // to reduce the number of computations done per-frame.
         self.rotation.y += rotate_y * CAMERA_ROTATION_SPEED;
+        self.rotation_y_sin = self.rotation.y.sin();
+        self.rotation_y_cos = self.rotation.y.cos();
+
         self.forward = CAMERA_DEFAULT_FORWARD.rotated(&self.rotation);
         self.right = CAMERA_DEFAULT_RIGHT.rotated(&self.rotation);
     }
