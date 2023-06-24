@@ -30,16 +30,8 @@ const ASPECT_RATIO: f32 = 1.0;
 const HEIGHT: f32 = 2.0;
 const WIDTH: f32 = ASPECT_RATIO * HEIGHT;
 const FOCAL_LENGTH: f32 = 1.0;
-const HORIZONTAL: Vec3<f32> = Vec3::<f32> {
-    x: WIDTH,
-    y: 0.0,
-    z: 0.0,
-};
-const VERTICAL: Vec3<f32> = Vec3::<f32> {
-    x: 0.0,
-    y: HEIGHT,
-    z: 0.0,
-};
+const HORIZONTAL: Vec3<f32> = Vec3::new(WIDTH, 0.0, 0.0);
+const VERTICAL: Vec3<f32> = Vec3::new(0.0, HEIGHT, 0.0);
 const TEXTURE_SIZE: usize = 8;
 
 // From the WASM-4 documentation:
@@ -86,20 +78,13 @@ impl Game {
         self.generate_map();
     }
 
-    fn update(&mut self, gamepad: u8) {
-        self.camera.update(gamepad);
+    fn update(&mut self, gamepad1: u8, gamepad2: u8) {
+        self.camera.update(gamepad1, gamepad2);
 
-        let time = self.frame_count as f32 * 0.05;
-
-        let start = Vec3::<f32> {
-            x: 15.5,
-            y: 15.5,
-            z: 15.5 + time,
-        };
         let lower_left_corner = Vec3::<f32> {
-            x: start.x - HORIZONTAL.x * 0.5 - VERTICAL.x * 0.5,
-            y: start.y - HORIZONTAL.y * 0.5 - VERTICAL.y * 0.5,
-            z: start.z - HORIZONTAL.z * 0.5 - VERTICAL.z * 0.5 - FOCAL_LENGTH,
+            x: self.camera.position.x - HORIZONTAL.x * 0.5 - VERTICAL.x * 0.5,
+            y: self.camera.position.y - HORIZONTAL.y * 0.5 - VERTICAL.y * 0.5,
+            z: self.camera.position.z - HORIZONTAL.z * 0.5 - VERTICAL.z * 0.5 - FOCAL_LENGTH,
         };
 
         for y in 0..SCREEN_HEIGHT {
@@ -107,32 +92,15 @@ impl Game {
             for x in 0..SCREEN_WIDTH {
                 let u = x as f32 / SCREEN_WIDTH as f32;
                 let direction = Vec3::<f32> {
-                    x: lower_left_corner.x + u * HORIZONTAL.x + v * VERTICAL.x - start.x,
-                    y: lower_left_corner.y + u * HORIZONTAL.y + v * VERTICAL.y - start.y,
-                    z: -(lower_left_corner.z + u * HORIZONTAL.z + v * VERTICAL.z - start.z),
+                    x: lower_left_corner.x + u * HORIZONTAL.x - self.camera.position.x,
+                    y: lower_left_corner.y + v * VERTICAL.y - self.camera.position.y,
+                    z: -lower_left_corner.z + self.camera.position.z,
                 };
 
-                // let a = self.camera.rotation.z;
-                let b = self.camera.rotation.y;
-                let c = self.camera.rotation.x;
-
-                // This formula includes all axes, but currently z isn't used:
-                // #[rustfmt::skip]
-                // let rotated_direction = Vec3::<f32> {
-                //     x: direction.x * (a.cos() * b.cos()) + direction.y * (a.cos() * b.sin() * c.sin() - a.sin() * c.cos()) + direction.z * (a.cos() * b.sin() * c.cos() + a.sin() * c.sin()),
-                //     y: direction.x * (a.sin() * b.cos()) + direction.y * (a.sin() * b.sin() * c.sin() + a.cos() * c.cos()) + direction.z * (a.sin() * b.sin() * c.cos() - a.cos() * c.sin()),
-                //     z: direction.x * (-b.sin()) + direction.y * (b.cos() * c.sin()) + direction.z * (b.cos() * c.cos()),
-                // };
-
-                // This formula skips z:
-                let rotated_direction = Vec3::<f32> {
-                    x: direction.x * b.cos() + direction.y * (b.sin() * c.sin()) + direction.z * (b.sin() * c.cos()),
-                    y: direction.y * c.cos() + direction.z * (-c.sin()),
-                    z: direction.x * (-b.sin()) + direction.y * (b.cos() * c.sin()) + direction.z * (b.cos() * c.cos()),
-                };
+                let rotated_direction = direction.rotate_by(self.camera.rotation);
 
                 let is_dithered = (x + y) & 1 == 0;
-                let color = self.raycast(start, rotated_direction, is_dithered);
+                let color = self.raycast(self.camera.position, rotated_direction, is_dithered);
                 unsafe { *DRAW_COLORS = color }
                 pixel(x, y);
             }
@@ -185,11 +153,7 @@ impl Game {
             y: (1.0 / direction.y).abs(),
             z: (1.0 / direction.z).abs(),
         };
-        let mut initial_step = Vec3::<f32> {
-            x: 0.0,
-            y: 0.0,
-            z: 0.0,
-        };
+        let mut initial_step = Vec3::new(0.0, 0.0, 0.0);
 
         if direction.x > 0.0 {
             initial_step.x = (start.x.ceil() - start.x) * ray_step.x;
@@ -294,5 +258,5 @@ unsafe fn start() {
 
 #[no_mangle]
 unsafe fn update() {
-    GAME.update(unsafe { *GAMEPAD1 });
+    GAME.update(*GAMEPAD1, *GAMEPAD2);
 }
