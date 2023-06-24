@@ -1,15 +1,12 @@
-#[cfg(feature = "buddy-alloc")]
 mod alloc;
+mod camera;
 mod rng;
+mod vec3;
+#[cfg(feature = "buddy-alloc")]
 mod wasm4;
-use wasm4::*;
 
-#[derive(Clone, Copy)]
-struct Vec3<T> {
-    x: T,
-    y: T,
-    z: T,
-}
+use crate::vec3::*;
+use wasm4::*;
 
 #[rustfmt::skip]
 const SMILEY: [u8; 8] = [
@@ -72,22 +69,26 @@ struct Game {
     frame_count: u32,
     map: [u8; MAP_LENGTH],
     rng: rng::Rng,
+    camera: camera::Camera,
 }
 
 impl Game {
-    pub const fn new() -> Self {
+    const fn new() -> Self {
         Self {
             frame_count: 0,
             map: [0; MAP_LENGTH],
             rng: rng::Rng::new(777),
+            camera: camera::Camera::new(),
         }
     }
 
-    pub fn start(&mut self) {
+    fn start(&mut self) {
         self.generate_map();
     }
 
-    pub fn update(&mut self) {
+    fn update(&mut self, gamepad: u8) {
+        self.camera.update(gamepad);
+
         let time = self.frame_count as f32 * 0.05;
 
         let start = Vec3::<f32> {
@@ -101,8 +102,6 @@ impl Game {
             z: start.z - HORIZONTAL.z * 0.5 - VERTICAL.z * 0.5 - FOCAL_LENGTH,
         };
 
-        let angle = time.sin() * 0.25;
-
         for y in 0..SCREEN_HEIGHT {
             let v = y as f32 / SCREEN_HEIGHT as f32;
             for x in 0..SCREEN_WIDTH {
@@ -113,10 +112,23 @@ impl Game {
                     z: -(lower_left_corner.z + u * HORIZONTAL.z + v * VERTICAL.z - start.z),
                 };
 
+                // let a = self.camera.rotation.z;
+                let b = self.camera.rotation.y;
+                let c = self.camera.rotation.x;
+
+                // This formula includes all axes, but currently z isn't used:
+                // #[rustfmt::skip]
+                // let rotated_direction = Vec3::<f32> {
+                //     x: direction.x * (a.cos() * b.cos()) + direction.y * (a.cos() * b.sin() * c.sin() - a.sin() * c.cos()) + direction.z * (a.cos() * b.sin() * c.cos() + a.sin() * c.sin()),
+                //     y: direction.x * (a.sin() * b.cos()) + direction.y * (a.sin() * b.sin() * c.sin() + a.cos() * c.cos()) + direction.z * (a.sin() * b.sin() * c.cos() - a.cos() * c.sin()),
+                //     z: direction.x * (-b.sin()) + direction.y * (b.cos() * c.sin()) + direction.z * (b.cos() * c.cos()),
+                // };
+
+                // This formula skips z:
                 let rotated_direction = Vec3::<f32> {
-                    x: direction.x * angle.cos() + direction.z * angle.sin(),
-                    y: direction.y,
-                    z: direction.x * -angle.sin() + direction.z * angle.cos(),
+                    x: direction.x * b.cos() + direction.y * (b.sin() * c.sin()) + direction.z * (b.sin() * c.cos()),
+                    y: direction.y * c.cos() + direction.z * (-c.sin()),
+                    z: direction.x * (-b.sin()) + direction.y * (b.cos() * c.sin()) + direction.z * (b.cos() * c.cos()),
                 };
 
                 let is_dithered = (x + y) & 1 == 0;
@@ -260,7 +272,6 @@ impl Game {
                     & (TEXTURE_SIZE - 1);
                 v = (hit_position.z * TEXTURE_SIZE as f32).to_int_unchecked::<usize>()
                     & (TEXTURE_SIZE - 1);
-
             } else {
                 u = ((hit_position.x + hit_position.z) * TEXTURE_SIZE as f32)
                     .to_int_unchecked::<usize>()
@@ -283,5 +294,5 @@ unsafe fn start() {
 
 #[no_mangle]
 unsafe fn update() {
-    GAME.update();
+    GAME.update(unsafe { *GAMEPAD1 });
 }
