@@ -16,13 +16,22 @@ impl<T> Vec3<T> {
 }
 
 impl Vec3<f32> {
-    pub fn rotate_by(&self, rotation: &Vec3<f32>) -> Vec3<f32> {
+    pub fn rotated(&self, rotation: &Vec3<f32>) -> Vec3<f32> {
+        let mut self_rotated = *self;
+        self_rotated.rotate_by(rotation);
+        self_rotated
+    }
+
+    pub fn rotate_by(&mut self, rotation: &Vec3<f32>) {
         // let a = self.camera.rotation.z;
         let b = rotation.y;
         let c = rotation.x;
+        let b_cos = b.cos();
+        let b_sin = b.sin();
+        let c_cos = c.cos();
+        let c_sin = c.sin();
 
         // This formula includes all axes, but currently z isn't used:
-        // #[rustfmt::skip]
         // Vec3::<f32> {
         //     x: direction.x * (a.cos() * b.cos()) + direction.y * (a.cos() * b.sin() * c.sin() - a.sin() * c.cos()) + direction.z * (a.cos() * b.sin() * c.cos() + a.sin() * c.sin()),
         //     y: direction.x * (a.sin() * b.cos()) + direction.y * (a.sin() * b.sin() * c.sin() + a.cos() * c.cos()) + direction.z * (a.sin() * b.sin() * c.cos() - a.cos() * c.sin()),
@@ -30,10 +39,12 @@ impl Vec3<f32> {
         // }
 
         // This formula skips z:
-        Vec3::<f32> {
-            x: self.x * b.cos() + self.y * b.sin() * c.sin() + self.z * b.sin() * c.cos(),
-            y: self.y * c.cos() + self.z * -c.sin(),
-            z: self.x * -b.sin() + self.y * b.cos() * c.sin() + self.z * b.cos() * c.cos(),
-        }
+        let x = self.x;
+        let y = self.y;
+        let z = self.z;
+
+        self.x = x * b_cos + y * b_sin * c_sin + z * b_sin * c_cos;
+        self.y = y * c_cos + z * -c_sin;
+        self.z = x * -b_sin + y * b_cos * c_sin + z * b_cos * c_cos;
     }
 }

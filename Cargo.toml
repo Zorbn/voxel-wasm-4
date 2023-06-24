@@ -13,7 +13,8 @@ buddy-alloc = { version = "0.5.1", optional = true }
 [profile.release]
 opt-level = "z"
 lto = true
-strip = true
+# strip = true
+debug = true
 
 [features]
 # use `--no-default-features` or comment out next line to disable allocator

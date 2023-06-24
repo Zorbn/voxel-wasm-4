@@ -136,13 +136,12 @@ impl Game {
             let v = y as f32 / SCREEN_HEIGHT as f32;
             for x in 0..SCREEN_WIDTH {
                 let u = x as f32 / SCREEN_WIDTH as f32;
-                let direction = Vec3::<f32> {
+                let mut direction = Vec3::<f32> {
                     x: lower_left_corner.x + u * HORIZONTAL.x - self.camera.position.x,
                     y: lower_left_corner.y + v * VERTICAL.y - self.camera.position.y,
                     z: -lower_left_corner.z + self.camera.position.z,
                 };
-
-                let rotated_direction = direction.rotate_by(&self.camera.rotation);
+                direction.rotate_by(&self.camera.rotation);
 
                 // Modify range to add dithering effect.
                 let range = if (x + y) & 1 == 0 {
@@ -150,8 +149,8 @@ impl Game {
                 } else {
                     RAY_RANGE
                 };
-                let ray_hit = self.raycast(self.camera.position, &rotated_direction, range, false);
-                let color = Self::hit_to_color(ray_hit, &self.camera.position, &rotated_direction);
+                let ray_hit = self.raycast(self.camera.position, &direction, range, false);
+                let color = Self::hit_to_color(ray_hit, &self.camera.position, &direction);
                 unsafe { *DRAW_COLORS = color }
                 pixel(x, y);
             }

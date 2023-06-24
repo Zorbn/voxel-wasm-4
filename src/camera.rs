@@ -56,8 +56,8 @@ impl Camera {
         self.rotation.x = (self.rotation.x + rotate_x * CAMERA_ROTATION_SPEED)
             .clamp(-CAMERA_MAX_X_ROTATION, CAMERA_MAX_X_ROTATION);
         self.rotation.y += rotate_y * CAMERA_ROTATION_SPEED;
-        self.forward = CAMERA_DEFAULT_FORWARD.rotate_by(&self.rotation);
-        self.right = CAMERA_DEFAULT_RIGHT.rotate_by(&self.rotation);
+        self.forward = CAMERA_DEFAULT_FORWARD.rotated(&self.rotation);
+        self.right = CAMERA_DEFAULT_RIGHT.rotated(&self.rotation);
     }
 
     fn step(&mut self, gamepad: u8) {
