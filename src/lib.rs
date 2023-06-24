@@ -43,6 +43,7 @@ const VERTICAL: Vec3<f32> = Vec3::<f32> {
     y: HEIGHT,
     z: 0.0,
 };
+const TEXTURE_SIZE: usize = 8;
 
 // From the WASM-4 documentation:
 fn pixel(x: usize, y: usize) {
@@ -238,7 +239,38 @@ impl Game {
             return 4;
         }
 
-        last_move + 1
+        // Take the absolute value to keep the wrapping math
+        // working even at negative coordinates.
+        let hit_position = Vec3::<f32> {
+            x: (start.x + last_dist_to_next * direction.x).abs(),
+            y: (start.y + last_dist_to_next * direction.y).abs(),
+            z: (start.z + last_dist_to_next * direction.z).abs(),
+        };
+
+        // Find texture uv, multiply by texture size then
+        // wrap to stay within the texture's bounds.
+        // "a ^ (x-1)" is the same as "a % x".
+        // Vertical and horizontal texture mapping requires different math.
+        unsafe {
+            let u;
+            let v;
+
+            if last_move == 1 {
+                u = (hit_position.x * TEXTURE_SIZE as f32).to_int_unchecked::<usize>()
+                    & (TEXTURE_SIZE - 1);
+                v = (hit_position.z * TEXTURE_SIZE as f32).to_int_unchecked::<usize>()
+                    & (TEXTURE_SIZE - 1);
+
+            } else {
+                u = ((hit_position.x + hit_position.z) * TEXTURE_SIZE as f32)
+                    .to_int_unchecked::<usize>()
+                    & (TEXTURE_SIZE - 1);
+                v = (hit_position.y * TEXTURE_SIZE as f32).to_int_unchecked::<usize>()
+                    & (TEXTURE_SIZE - 1);
+            }
+
+            last_move + 1 + (((SMILEY[v] & (1 << u)) != 0) as u16)
+        }
     }
 }
 
