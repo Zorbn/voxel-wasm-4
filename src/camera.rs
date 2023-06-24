@@ -17,7 +17,7 @@ pub struct Camera {
 impl Camera {
     pub const fn new() -> Self {
         Self {
-            position: Vec3::new(0.0, 0.0, 0.0),
+            position: Vec3::new(0.0, 15.0, 0.0),
             rotation: Vec3::new(0.0, 0.0, 0.0),
             forward: CAMERA_DEFAULT_FORWARD,
             right: CAMERA_DEFAULT_RIGHT,
