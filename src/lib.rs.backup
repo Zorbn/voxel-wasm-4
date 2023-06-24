@@ -1,0 +1,93 @@
+#[cfg(feature = "buddy-alloc")]
+mod alloc;
+mod wasm4;
+use wasm4::*;
+
+#[rustfmt::skip]
+const SMILEY: [u8; 8] = [
+    0b11000011,
+    0b10000001,
+    0b00100100,
+    0b00100100,
+    0b00000000,
+    0b00100100,
+    0b10011001,
+    0b11000011,
+];
+
+struct Player {
+    x: i32,
+    y: i32,
+}
+
+impl Player {
+    pub const fn new() -> Self {
+        Self { x: 0, y: 0 }
+    }
+
+    pub fn update(&mut self, gamepad: u8) {
+        let mut move_x = 0;
+        let mut move_y = 0;
+
+        if gamepad & BUTTON_LEFT != 0 {
+            move_x -= 1;
+        }
+
+        if gamepad & BUTTON_RIGHT != 0 {
+            move_x += 1;
+        }
+
+        self.x += move_x;
+
+        if gamepad & BUTTON_UP != 0 {
+            move_y -= 1;
+        }
+
+        if gamepad & BUTTON_DOWN != 0 {
+            move_y += 1;
+        }
+
+        self.y += move_y;
+    }
+}
+
+struct Game {
+    player: Player,
+}
+
+impl Game {
+    pub const fn new() -> Self {
+        Self {
+            player: Player::new(),
+        }
+    }
+
+    pub fn start(&mut self) {}
+
+    pub fn update(&mut self) {
+        unsafe { *DRAW_COLORS = 2 }
+        text("Hello from Rust!", 10, 10);
+
+        let gamepad = unsafe { *GAMEPAD1 };
+        if gamepad & BUTTON_1 != 0 {
+            unsafe { *DRAW_COLORS = 4 }
+        }
+
+        self.player.update(gamepad);
+
+        blit(&SMILEY, self.player.x, self.player.y, 8, 8, BLIT_1BPP);
+        text("Press X or whatvr", 16, 90);
+    }
+}
+
+static mut GAME: Game = Game::new();
+
+#[no_mangle]
+unsafe fn start() {
+    GAME.start();
+}
+
+#[no_mangle]
+unsafe fn update() {
+    GAME.update();
+}
