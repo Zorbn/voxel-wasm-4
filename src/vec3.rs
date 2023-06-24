@@ -47,4 +47,14 @@ impl Vec3<f32> {
         self.y = y * c_cos + z * -c_sin;
         self.z = x * -b_sin + y * b_cos * c_sin + z * b_cos * c_cos;
     }
+
+    pub fn rotate_by_precalculated(&mut self, x_sin: f32, x_cos: f32, y_sin: f32, y_cos: f32) {
+        let x = self.x;
+        let y = self.y;
+        let z = self.z;
+
+        self.x = x * y_cos + y * y_sin * x_sin + z * y_sin * x_cos;
+        self.y = y * x_cos + z * -x_sin;
+        self.z = x * -y_sin + y * y_cos * x_sin + z * y_cos * x_cos;
+    }
 }

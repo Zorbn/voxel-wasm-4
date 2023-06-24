@@ -141,6 +141,13 @@ impl Game {
             z: self.camera.position.z - HORIZONTAL.z * 0.5 - VERTICAL.z * 0.5 - FOCAL_LENGTH,
         };
 
+        // Precalculate sin/cos of the camera's rotation vector,
+        // to reduce the number of computations done per-pixel.
+        let x_cos = self.camera.rotation.x.cos();
+        let x_sin = self.camera.rotation.x.sin();
+        let y_cos = self.camera.rotation.y.cos();
+        let y_sin = self.camera.rotation.y.sin();
+
         for y in 0..SCREEN_HEIGHT {
             let v = y as f32 / SCREEN_HEIGHT as f32;
             for x in 0..SCREEN_WIDTH {
@@ -150,7 +157,8 @@ impl Game {
                     y: lower_left_corner.y + v * VERTICAL.y - self.camera.position.y,
                     z: -lower_left_corner.z + self.camera.position.z,
                 };
-                direction.rotate_by(&self.camera.rotation);
+                // direction.rotate_by(&self.camera.rotation);
+                direction.rotate_by_precalculated(x_sin, x_cos, y_sin, y_cos);
                 // Normalize the direction vector:
                 let direction_inv_sqrt = inv_sqrt(direction.x * direction.x + direction.y * direction.y + direction.z * direction.z);
                 direction.x *= direction_inv_sqrt;
