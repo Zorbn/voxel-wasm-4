@@ -16,7 +16,7 @@ impl<T> Vec3<T> {
 }
 
 impl Vec3<f32> {
-    pub fn rotate_by(&self, rotation: Vec3<f32>) -> Vec3<f32> {
+    pub fn rotate_by(&self, rotation: &Vec3<f32>) -> Vec3<f32> {
         // let a = self.camera.rotation.z;
         let b = rotation.y;
         let c = rotation.x;

@@ -97,18 +97,18 @@ impl Game {
         if pressed_this_frame & BUTTON_1 != 0 {
             let ray_hit = self.raycast(
                 self.camera.position,
-                self.camera.forward,
+                &self.camera.forward,
                 INTERACT_DISTANCE,
                 true,
             );
             if let Some(ray_hit) = ray_hit {
                 let hit_block = ray_hit.block.unwrap();
-                self.set_map(hit_block, 0);
+                self.set_map(&hit_block, 0);
             }
         } else if pressed_this_frame & BUTTON_2 != 0 {
             let ray_hit = self.raycast(
                 self.camera.position,
-                self.camera.forward,
+                &self.camera.forward,
                 INTERACT_DISTANCE,
                 true,
             );
@@ -122,7 +122,7 @@ impl Game {
                     _ => {}
                 }
 
-                self.set_map(target_block, 1);
+                self.set_map(&target_block, 1);
             }
         }
 
@@ -142,7 +142,7 @@ impl Game {
                     z: -lower_left_corner.z + self.camera.position.z,
                 };
 
-                let rotated_direction = direction.rotate_by(self.camera.rotation);
+                let rotated_direction = direction.rotate_by(&self.camera.rotation);
 
                 // Modify range to add dithering effect.
                 let range = if (x + y) & 1 == 0 {
@@ -150,8 +150,8 @@ impl Game {
                 } else {
                     RAY_RANGE
                 };
-                let ray_hit = self.raycast(self.camera.position, rotated_direction, range, false);
-                let color = Self::hit_to_color(ray_hit, self.camera.position, rotated_direction);
+                let ray_hit = self.raycast(self.camera.position, &rotated_direction, range, false);
+                let color = Self::hit_to_color(ray_hit, &self.camera.position, &rotated_direction);
                 unsafe { *DRAW_COLORS = color }
                 pixel(x, y);
             }
@@ -177,7 +177,7 @@ impl Game {
         }
     }
 
-    fn hit_map(&self, position: Vec3<i32>) -> bool {
+    fn hit_map(&self, position: &Vec3<i32>) -> bool {
         let wrapped_position = Vec3::<usize> {
             x: position.x as usize & (MAP_SIZE - 1),
             y: position.y as usize & (MAP_SIZE - 1),
@@ -193,7 +193,7 @@ impl Game {
         }
     }
 
-    fn set_map(&mut self, position: Vec3<i32>, voxel: u8) {
+    fn set_map(&mut self, position: &Vec3<i32>, voxel: u8) {
         unsafe {
             let wrapped_position = Vec3::<usize> {
                 x: position.x as usize & (MAP_SIZE - 1),
@@ -209,7 +209,7 @@ impl Game {
         }
     }
 
-    fn hit_to_color(ray_hit: Option<RayHit>, start: Vec3<f32>, direction: Vec3<f32>) -> u16 {
+    fn hit_to_color(ray_hit: Option<RayHit>, start: &Vec3<f32>, direction: &Vec3<f32>) -> u16 {
         // Check if the ray hit nothing:
         if ray_hit.is_none() {
             return 4;
@@ -254,7 +254,7 @@ impl Game {
     fn raycast(
         &self,
         mut start: Vec3<f32>,
-        direction: Vec3<f32>,
+        direction: &Vec3<f32>,
         range: f32,
         with_block: bool,
     ) -> Option<RayHit> {
@@ -306,7 +306,7 @@ impl Game {
         };
         let mut last_dist_to_next = 0.0;
 
-        let mut hit_block = self.hit_map(block);
+        let mut hit_block = self.hit_map(&block);
         let mut last_move = 0;
         while !hit_block && last_dist_to_next < range {
             if dist_to_next.x < dist_to_next.y && dist_to_next.x < dist_to_next.z {
@@ -326,7 +326,7 @@ impl Game {
                 last_move = 2;
             }
 
-            hit_block = self.hit_map(block);
+            hit_block = self.hit_map(&block);
         }
 
         if !hit_block {
